@@ -780,7 +780,7 @@
 
       // Check Consent State
       if (localStorage.getItem("studiowallpaper_consent") === "true") {
-        unlockApp();
+        lockApp();
       } else {
         lockApp();
       }
