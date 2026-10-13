@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="de" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wallpaper Studio Pro - Ресайзер и Форматировщик Обоев</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        // Using pure system font stack to prevent third-party IP leakage (GDPR/DSGVO safe)
+                        sans: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar styling */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        
+        .checkerboard-bg {
+            background-color: #020617;
+            background-image: linear-gradient(45deg, #0f172a 25%, transparent 25%), 
+                              linear-gradient(-45deg, #0f172a 25%, transparent 25%), 
+                              linear-gradient(45deg, transparent 75%, #0f172a 75%), 
+                              linear-gradient(-45deg, transparent 75%, #0f172a 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+
+        /* Strict UI Locker Class */
+        body.consent-locked #app-main-content {
+            filter: blur(12px) grayscale(50%);
+            pointer-events: none !important;
+            user-select: none !important;
+        }
+        body.consent-locked {
+            overflow: hidden !important;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white font-sans consent-locked">
+
+    <!-- MANDATORY GDPR / DSGVO CONSENT MODAL LOCKER -->
+    <div id="consentLockerModal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 sm:p-8 shadow-2xl relative overflow-hidden flex flex-col max-h-[92vh]">
+            
+            <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center mb-4 text-xl">
+                <i class="fa-solid fa-user-lock"></i>
+            </div>
+
+            <h2 class="text-xl sm:text-2xl font-bold text-white mb-2 tracking-tight">Добро пожаловать в Wallpaper Studio Pro</h2>
+            <p class="text-xs sm:text-sm text-slate-300 leading-relaxed mb-4">
+                Перед использованием сайта вам необходимо ознакомиться и согласиться с нашей <button onclick="openConsentTab('privacy')" class="text-indigo-400 underline font-medium">Политикой конфиденциальности (DSGVO)</button> и юридической информацией <button onclick="openConsentTab('impressum')" class="text-indigo-400 underline font-medium">Impressum (§ 5 DDG)</button>.
+            </p>
+
+            <!-- Consent Modal Internal Tabs -->
+            <div class="flex border-b border-slate-800 mb-4 text-xs font-medium">
+                <button id="consentTabPrivacyBtn" onclick="switchConsentTab('privacy')" class="pb-2 px-3 border-b-2 border-indigo-500 text-indigo-400">Конфиденциальность (DSGVO)</button>
+                <button id="consentTabImpressumBtn" onclick="switchConsentTab('impressum')" class="pb-2 px-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200">Impressum (§ 5 DDG)</button>
+            </div>
+
+            <!-- Tab Content: Privacy -->
+            <div id="consentTabPrivacyContent" class="text-xs text-slate-300 space-y-3 overflow-y-auto pr-1 flex-1 mb-6 bg-slate-950/60 p-4 rounded-xl border border-slate-800/80 leading-relaxed">
+                <p><strong>1. Обработка данных (Client-Side):</strong> Все ваши фотографии обрабатываются исключительно локально в вашем браузере с помощью HTML5 Canvas API. Никакие картинки НЕ отправляются на сервер.</p>
+                <p><strong>2. Хостинг (Vercel Inc.):</strong> Сайт размещен на серверах Vercel Inc. (440 Mission Street, San Francisco, CA 94105, USA). При запросе страниц Vercel автоматически фиксирует стандартные серверные логи (IP-адрес, тип браузера, время) для обеспечения безопасности.</p>
+                <p><strong>3. LocalStorage:</strong> Мы используем локальное хранилище исключительно для запоминания вашего согласия с правилами, чтобы окно не появлялось повторно при каждом визите.</p>
+                <p><strong>4. Ваши права:</strong> В соответствии с DSGVO вы имеете право на бесплатную информацию о ваших сохраненных данных, а также право на их удаление или исправление.</p>
+            </div>
+
+            <!-- Tab Content: Impressum -->
+            <div id="consentTabImpressumContent" class="text-xs text-slate-300 space-y-2 overflow-y-auto pr-1 flex-1 mb-6 bg-slate-950/60 p-4 rounded-xl border border-slate-800/80 hidden leading-relaxed">
+                <p class="font-bold text-slate-100 text-sm">Angaben gemäß § 5 DDG</p>
+                <p><strong>Имя / Name:</strong> Максим Дидух (Maxim Didukh)</p>
+                <p><strong>Адрес / Adresse:</strong> Johannes-Rieden-Straße 1, 56599 Leutesdorf, Deutschland</p>
+                <p><strong>Email:</strong> <a href="mailto:didukh.maxim@gmail.com" class="text-indigo-400 underline">didukh.maxim@gmail.com</a></p>
+                <p><strong>Телефон / Telefon:</strong> +380 99 244 13 24</p>
+                <p class="pt-2 text-[11px] text-slate-400">Ответственный за содержание согласно § 18 Abs. 2 MStV: Maxim Didukh.</p>
+            </div>
+
+            <div class="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-800">
+                <div class="text-[11px] text-slate-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-shield-halved text-emerald-400"></i> Согласие сохраняется в браузер
+                </div>
+                <button onclick="acceptConsent()" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold text-xs shadow-lg shadow-indigo-600/30 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-check"></i>
+                    Принять и продолжить
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MAIN SITE CONTENT (LOCKED UNTIL CONSENT GIVEN) -->
+    <div id="app-main-content" class="flex-1 flex flex-col">
+        <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-40">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                        <i class="fa-solid fa-crop-simple text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">Wallpaper Studio Pro</h1>
+                        <p class="text-xs text-slate-400">Форматирование обоев для ПК и телефонов</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3 text-xs text-slate-400">
+                    <span class="hidden md:inline-flex items-center gap-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1 rounded-full font-medium">
+                        <i class="fa-solid fa-shield-halved text-xs"></i> 100% Client-Side (DSGVO Konform)
+                    </span>
+                </div>
+            </div>
+        </header>
+
+        <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- Left Sidebar: Controls & Options (5 columns) -->
+            <div class="lg:col-span-5 flex flex-col space-y-6">
+                
+                <!-- Step 1: Image Upload -->
+                <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl backdrop-blur">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="font-semibold text-slate-200 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-400 text-xs flex items-center justify-center font-bold">1</span>
+                            Загрузка изображения
+                        </h2>
+                        <span id="imageMeta" class="text-xs text-indigo-400 font-mono hidden"></span>
+                    </div>
+                    
+                    <div id="dropZone" class="border-2 border-dashed border-slate-700 hover:border-indigo-500 transition rounded-xl p-6 text-center cursor-pointer bg-slate-950/50 hover:bg-indigo-500/5 group relative overflow-hidden">
+                        <input type="file" id="fileInput" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10">
+                        <div class="flex flex-col items-center space-y-3 pointer-events-none">
+                            <div class="w-12 h-12 rounded-2xl bg-slate-800 group-hover:bg-indigo-500/20 group-hover:text-indigo-400 text-slate-400 flex items-center justify-center transition text-xl shadow-inner">
+                                <i class="fa-solid fa-cloud-arrow-up"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium text-sm text-slate-200">Перетащите сюда картинку или <span class="text-indigo-400 group-hover:underline">выберите файл</span></p>
+                                <p class="text-xs text-slate-400 mt-1">PNG, JPG, WEBP • Фото обработается прямо у вас на ПК</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Preset / Resolution Selector -->
+                <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl backdrop-blur">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="font-semibold text-slate-200 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-400 text-xs flex items-center justify-center font-bold">2</span>
+                            Разрешение экрана
+                        </h2>
+                        <div class="flex bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs font-medium">
+                            <button id="tabDesktop" onclick="setDeviceType('desktop')" class="px-3 py-1 rounded-md bg-indigo-600 text-white transition shadow">Компьютер</button>
+                            <button id="tabMobile" onclick="setDeviceType('mobile')" class="px-3 py-1 rounded-md text-slate-400 hover:text-white transition">Телефон</button>
+                        </div>
+                    </div>
+
+                    <!-- Presets Desktop Grid -->
+                    <div id="desktopPresets" class="grid grid-cols-2 gap-2 mb-4">
+                        <button onclick="setResolution(1920, 1080, 'Full HD (16:9)')" class="preset-btn active border-indigo-500 bg-indigo-500/10 p-2.5 rounded-xl border text-left transition flex flex-col">
+                            <span class="font-medium text-xs text-slate-200">Full HD</span>
+                            <span class="text-[11px] text-slate-400">1920 × 1080</span>
+                        </button>
+                        <button onclick="setResolution(2560, 1440, '2K QHD (16:9)')" class="preset-btn border-slate-800 bg-slate-950 hover:border-slate-700 p-2.5 rounded-xl border text-left transition flex flex-col">
+                            <span class="font-medium text-xs text-slate-200">2K QHD</span>
+                            <span class="text-[11px] text-slate-400">2560 × 1440</span>
+                        </button>
+                        <button onclick="setResolution(3840, 2160, '4K UHD (16:9)')" class="preset-btn border-slate-800 bg-slate-950 hover:border-slate-700 p-2.5 rounded-xl border text-left transition flex flex-col">
+                            <span class="font-medium text-xs text-slate-200">4K UHD</span>
+                            <span class="text-[11px] text-slate-400">3840 × 2160</span>
+                        </button>
+                        <button onclick="setResolution(2560, 1080, 'Ultrawide (21:9)')" class="preset-btn border-slate-800 bg-slate-950 hover:border-slate-700 p-2.5 rounded-xl border text-left transition flex flex-col">
+                            <span class="font-medium text-xs text-slate-200">Ultrawide</span>
+                            <span class="text-[11px] text-slate-400">2560 × 1080</span>
+                        </button>
+                    </div>
+
+                    <!-- Presets Mobile Grid -->
+                    <div id="mobilePresets" class="grid grid-cols-2 gap-2 mb-4 hidden">
+                        <button onclick="setResolution(1179, 2556, 'iPhone 15 / 16 Pro')" class="preset-btn border-slate-800 bg-slate-950 hover:border-slate-700 p-2.5 rounded-xl border text-left transition flex flex-col">
+                            <span class="font-medium text-xs text-slate-200">iPhone 15/16 Pro</span>
+                            <span class="text-[11px] text-slate-400">1179 × 2556</span>
+                        </button>
+                        <button onclick="setResolution(1290, 2796, 'iPhone Pro Max')" class="preset-btn border-slate-800 bg-slate-950 hover:border-slate-700 p-2.5 rounded-xl border text-left transition flex flex-col">
+                            <span class="font-medium text-xs text-slate-200">iPhone Pro Max</span>
+                            <span class="text-[11px] text-slate-400">1290 × 2796</span>
+                        </button>
+                        <button onclick="setResolution(1080, 2400, 'Android FHD+')" class="preset-btn border-slate-800 bg-slate-950 hover:border-slate-700 p-2.5 rounded-xl border text-left transition flex flex-col">
+                            <span class="font-medium text-xs text-slate-200">Android FHD+</span>
+                            <span class="text-[11px] text-slate-400">1080 × 2400</span>
+                        </button>
+                        <button onclick="setResolution(1440, 3080, 'Samsung QHD+')" class="preset-btn border-slate-800 bg-slate-950 hover:border-slate-700 p-2.5 rounded-xl border text-left transition flex flex-col">
+                            <span class="font-medium text-xs text-slate-200">Samsung QHD+</span>
+                            <span class="text-[11px] text-slate-400">1440 × 3080</span>
+                        </button>
+                    </div>
+
+                    <!-- Custom Width / Height Input -->
+                    <div class="grid grid-cols-2 gap-3 pt-2 border-t border-slate-800">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1">Ширина (px)</label>
+                            <input type="number" id="customWidth" value="1920" min="100" max="8192" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1">Высота (px)</label>
+                            <input type="number" id="customHeight" value="1080" min="100" max="8192" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Padding & Background Options -->
+                <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl backdrop-blur">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="font-semibold text-slate-200 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-400 text-xs flex items-center justify-center font-bold">3</span>
+                            Оформление полей
+                        </h2>
+                    </div>
+
+                    <!-- Style Selector Tabs -->
+                    <div class="grid grid-cols-2 gap-2 mb-4">
+                        <button onclick="setPaddingStyle('color')" id="btnStyleColor" class="p-3 rounded-xl border border-indigo-500 bg-indigo-500/10 text-indigo-300 text-xs font-medium flex items-center justify-center gap-2 transition">
+                            <i class="fa-solid fa-palette"></i> Цвет по краям
+                        </button>
+                        <button onclick="setPaddingStyle('blur')" id="btnStyleBlur" class="p-3 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 text-xs font-medium flex items-center justify-center gap-2 transition">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Размытый фон
+                        </button>
+                    </div>
+
+                    <!-- Options for Solid Color -->
+                    <div id="optionsColor" class="space-y-3">
+                        <div class="flex items-center justify-between bg-slate-950 border border-slate-800 p-3 rounded-xl">
+                            <div class="flex items-center space-x-3">
+                                <input type="color" id="bgColorPicker" value="#0f172a" class="w-9 h-9 rounded-lg bg-transparent cursor-pointer border-0">
+                                <div>
+                                    <p class="text-xs font-medium text-slate-200">Выбор цвета заливки</p>
+                                    <p class="text-[11px] text-slate-400">Нажмите для выбора палитры</p>
+                                </div>
+                            </div>
+                            <div class="flex gap-1.5">
+                                <button onclick="setQuickColor('#000000')" class="w-6 h-6 rounded-full bg-black border border-slate-700 hover:scale-110 transition" title="Черный"></button>
+                                <button onclick="setQuickColor('#ffffff')" class="w-6 h-6 rounded-full bg-white border border-slate-700 hover:scale-110 transition" title="Белый"></button>
+                                <button onclick="setQuickColor('#0f172a')" class="w-6 h-6 rounded-full bg-slate-900 border border-slate-700 hover:scale-110 transition" title="Темно-серый"></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Options for Pixel-Precise Blur -->
+                    <div id="optionsBlur" class="space-y-4 hidden">
+                        <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl space-y-2">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-xs font-medium text-slate-200">Выбор пикселей для "Лупы"</p>
+                                    <p class="text-[11px] text-slate-400">Выделите рамку прямо на фото справа</p>
+                                </div>
+                                <button onclick="toggleBlurCropSelection()" id="btnSelectBlurArea" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium transition shadow flex items-center gap-1.5">
+                                    <i class="fa-solid fa-vector-square"></i> <span id="cropBtnText">Выбрать область</span>
+                                </button>
+                            </div>
+                            <div id="blurCropActiveNotice" class="hidden text-[11px] text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1.5 rounded-lg flex items-center justify-between">
+                                <span>Зажмите мышь на превью справа и выделите область!</span>
+                                <button onclick="resetBlurCropArea()" class="text-slate-400 hover:text-white underline">Сброс</button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs text-slate-400 mb-1">
+                                <span>Интенсивность размытия</span>
+                                <span id="blurValLabel" class="font-mono text-indigo-400">30px</span>
+                            </div>
+                            <input type="range" id="blurRange" min="5" max="80" value="30" class="w-full accent-indigo-500 cursor-pointer">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs text-slate-400 mb-1">
+                                <span>Затемнение полей</span>
+                                <span id="dimValLabel" class="font-mono text-indigo-400">35%</span>
+                            </div>
+                            <input type="range" id="dimRange" min="0" max="80" value="35" class="w-full accent-indigo-500 cursor-pointer">
+                        </div>
+                    </div>
+
+                    <!-- Fit vs Cover Mode -->
+                    <div class="mt-4 pt-4 border-t border-slate-800">
+                        <label class="block text-xs font-medium text-slate-400 mb-2">Режим размещения главной картинки</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="setFitMode('contain')" id="btnFitContain" class="py-2 px-3 rounded-xl bg-indigo-600 text-white text-xs font-medium transition">Вписать с полями</button>
+                            <button onclick="setFitMode('cover')" id="btnFitCover" class="py-2 px-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 hover:text-white text-xs font-medium transition">Обрезать на весь экран</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Content: Interactive Canvas Preview & Export (7 columns) -->
+            <div class="lg:col-span-7 flex flex-col space-y-6">
+                
+                <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl backdrop-blur flex-1 flex flex-col">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="font-semibold text-slate-200 flex items-center gap-2">
+                            <i class="fa-solid fa-desktop text-indigo-400"></i>
+                            Предпросмотр обоев
+                        </h2>
+                        <span id="previewResolutionText" class="text-xs px-3 py-1 rounded-full bg-slate-950 border border-slate-800 text-slate-300 font-mono">1920 × 1080</span>
+                    </div>
+
+                    <!-- Interactive Preview Container -->
+                    <div id="canvasContainer" class="relative flex-1 min-h-[380px] sm:min-h-[480px] checkerboard-bg rounded-xl border border-slate-800 overflow-hidden flex items-center justify-center p-4 select-none">
+                        
+                        <!-- Empty State Placeholder -->
+                        <div id="placeholderState" class="text-center p-6 max-w-sm">
+                            <div class="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-800 text-slate-500 flex items-center justify-center mx-auto mb-4 text-2xl shadow-inner">
+                                <i class="fa-regular fa-image"></i>
+                            </div>
+                            <p class="text-slate-200 font-medium text-sm">Изображение не загружено</p>
+                            <p class="text-xs text-slate-400 mt-1.5 leading-relaxed">Загрузите фотографию слева, чтобы сформировать идеальные обои для вашего устройства.</p>
+                        </div>
+
+                        <!-- Canvas -->
+                        <canvas id="previewCanvas" class="max-w-full max-h-[520px] object-contain rounded shadow-2xl hidden cursor-default"></canvas>
+                        
+                        <!-- Selection Overlay Box for Blur Pixel Sampling -->
+                        <div id="cropOverlayBox" class="absolute border-2 border-dashed border-indigo-400 bg-indigo-500/20 hidden pointer-events-none rounded">
+                            <div class="absolute -top-6 left-0 bg-indigo-600 text-white text-[10px] px-2 py-0.5 rounded font-mono shadow">Область размытия</div>
+                        </div>
+                    </div>
+
+                    <!-- Download Controls Bar -->
+                    <div class="mt-6 flex flex-col sm:flex-row items-center gap-3">
+                        <div class="w-full sm:w-auto flex-1 flex gap-2">
+                            <select id="exportFormat" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                                <option value="image/png">PNG (Без потери качества)</option>
+                                <option value="image/jpeg">JPEG (Меньше размер)</option>
+                            </select>
+                            <select id="exportQuality" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                                <option value="1.0">Качество: 100%</option>
+                                <option value="0.9">Качество: 90%</option>
+                                <option value="0.8">Качество: 80%</option>
+                            </select>
+                        </div>
+                        <button id="downloadBtn" onclick="downloadWallpaper()" disabled class="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold text-xs transition shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer">
+                            <i class="fa-solid fa-download"></i>
+                            Скачать обои
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+        </main>
+
+        <footer class="border-t border-slate-800 bg-slate-900/60 py-6 text-center text-xs text-slate-400 mt-auto">
+            <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p>Wallpaper Studio Pro &copy; 2026 • Локальная обработка изображений без отправки на сервер.</p>
+                <div class="flex items-center space-x-4">
+                    <button onclick="openFooterModal('impressumModal')" class="hover:text-white underline transition font-medium">Impressum (§ 5 DDG)</button>
+                    <span>•</span>
+                    <button onclick="openFooterModal('datenschutzModal')" class="hover:text-white underline transition font-medium">Datenschutz (DSGVO)</button>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Footer Impressum Modal -->
+    <div id="impressumModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 relative max-h-[90vh] overflow-y-auto text-left shadow-2xl">
+            <button onclick="closeFooterModal('impressumModal')" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center transition"><i class="fa-solid fa-xmark"></i></button>
+            
+            <h3 class="text-lg font-bold text-slate-100 mb-4 border-b border-slate-800 pb-3 flex items-center gap-2">
+                <i class="fa-solid fa-scale-balanced text-indigo-400"></i> Impressum
+            </h3>
+            
+            <div class="space-y-4 text-xs text-slate-300 leading-relaxed">
+                <div>
+                    <h4 class="font-semibold text-slate-200 uppercase tracking-wider text-[10px] text-indigo-400 mb-1">Angaben gemäß § 5 DDG (Digitale-Dienste-Gesetz)</h4>
+                    <p class="text-sm font-medium text-slate-100">Максим Дидух / Maxim Didukh</p>
+                    <p>Johannes-Rieden-Straße 1</p>
+                    <p>56599 Leutesdorf</p>
+                    <p>Deutschland</p>
+                </div>
+
+                <div class="pt-2 border-t border-slate-800/60">
+                    <h4 class="font-semibold text-slate-200 uppercase tracking-wider text-[10px] text-indigo-400 mb-1">Kontakt</h4>
+                    <p>E-Mail: <a href="mailto:didukh.maxim@gmail.com" class="text-indigo-400 hover:underline">didukh.maxim@gmail.com</a></p>
+                    <p>Telefon: +380 99 244 13 24</p>
+                </div>
+
+                <div class="pt-2 border-t border-slate-800/60">
+                    <h4 class="font-semibold text-slate-200 uppercase tracking-wider text-[10px] text-indigo-400 mb-1">Redaktionell verantwortlich</h4>
+                    <p>Maxim Didukh<br>Johannes-Rieden-Straße 1, 56599 Leutesdorf, Deutschland</p>
+                </div>
+
+                <div class="pt-2 border-t border-slate-800/60 text-[11px] text-slate-400">
+                    <p><strong>EU-Streitschlichtung:</strong> Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit: <a href="https://ec.europa.eu/consumers/odr/" target="_blank" rel="noopener noreferrer" class="text-indigo-400 underline">https://ec.europa.eu/consumers/odr/</a>. Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.</p>
+                </div>
+            </div>
+
+            <div class="mt-6 text-right border-t border-slate-800 pt-4">
+                <button onclick="closeFooterModal('impressumModal')" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-medium transition shadow">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer Privacy Policy Modal -->
+    <div id="datenschutzModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 relative max-h-[90vh] overflow-y-auto text-left shadow-2xl">
+            <button onclick="closeFooterModal('datenschutzModal')" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center transition"><i class="fa-solid fa-xmark"></i></button>
+            
+            <h3 class="text-lg font-bold text-slate-100 mb-4 border-b border-slate-800 pb-3 flex items-center gap-2">
+                <i class="fa-solid fa-user-shield text-indigo-400"></i> Datenschutzerklärung (DSGVO)
+            </h3>
+            
+            <div class="space-y-4 text-xs text-slate-300 leading-relaxed">
+                <div>
+                    <h4 class="font-semibold text-slate-100 text-sm mb-1">1. Datenschutz auf einen Blick</h4>
+                    <p>Wir nehmen den Schutz Ihrer persönlichen Daten sehr ernst. Diese Website verarbeitet Ihre hochgeladenen Bilder **ausschließlich локально в вашем браузере** (HTML5 Canvas Client-Side Processing). Es werden zu keinem Zeitpunkt Bilddateien oder Fotodaten auf unsere Server oder Server Dritter übertragen.</p>
+                </div>
+
+                <div class="pt-2 border-t border-slate-800/60">
+                    <h4 class="font-semibold text-slate-100 text-sm mb-1">2. Verantwortliche Stelle</h4>
+                    <p>Verantwortlicher im Sinne der Datenschutz-Grundverordnung (DSGVO):</p>
+                    <p class="mt-1 font-medium text-slate-200">Maxim Didukh<br>Johannes-Rieden-Straße 1<br>56599 Leutesdorf, Deutschland<br>E-Mail: didukh.maxim@gmail.com</p>
+                </div>
+
+                <div class="pt-2 border-t border-slate-800/60">
+                    <h4 class="font-semibold text-slate-100 text-sm mb-1">3. Hosting & Infrastructure (Vercel)</h4>
+                    <p>Diese Website wird bei der Vercel Inc. (440 Mission Street, First Floor, San Francisco, CA 94105, USA) gehostet. Beim Aufruf der Webseite erfasst Vercel automatisch Server-Log-Dateien (z. B. IP-Adresse, Dateiaufrufe, Uhrzeit, Browser-Typ). Dies ist gemäß Art. 6 Abs. 1 lit. f DSGVO zur Gewährleistung der Stabilität und Sicherheit des Dienstes erforderlich.</p>
+                </div>
+
+                <div class="pt-2 border-t border-slate-800/60">
+                    <h4 class="font-semibold text-slate-100 text-sm mb-1">4. Verwendung von LocalStorage</h4>
+                    <p>Diese Anwendung verwendet den `localStorage` Ihres Browsers ausschließlich, um zu speichern, dass Sie dieser Datenschutzerklärung zugestimmt haben. Es werden keine Tracking-Cookies gesetzt.</p>
+                </div>
+
+                <div class="pt-2 border-t border-slate-800/60">
+                    <h4 class="font-semibold text-slate-100 text-sm mb-1">5. Ihre Rechte gemäß DSGVO</h4>
+                    <p>Sie haben das Recht auf Auskunft (Art. 15 DSGVO), Berichtigung (Art. 16 DSGVO), Löschung (Art. 17 DSGVO) sowie Beschwerde bei einer Datenschutz-Aufsichtsbehörde.</p>
+                </div>
+            </div>
+
+            <div class="mt-6 text-right border-t border-slate-800 pt-4">
+                <button onclick="closeFooterModal('datenschutzModal')" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-medium transition shadow">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- MANDATORY CONSENT LOCK LOGIC ---
+        const CONSENT_KEY = "gdpr_consent_accepted_v2";
+
+        function checkConsentOnLoad() {
+            const hasAccepted = localStorage.getItem(CONSENT_KEY);
+            if (hasAccepted === "true") {
+                unlockSite();
+            } else {
+                lockSite();
+            }
+        }
+
+        function lockSite() {
+            document.body.classList.add("consent-locked");
+            document.getElementById("consentLockerModal").classList.remove("hidden");
+        }
+
+        function unlockSite() {
+            document.body.classList.remove("consent-locked");
+            document.getElementById("consentLockerModal").classList.add("hidden");
+        }
+
+        function acceptConsent() {
+            localStorage.setItem(CONSENT_KEY, "true");
+            unlockSite();
+        }
+
+        function switchConsentTab(tab) {
+            const privBtn = document.getElementById("consentTabPrivacyBtn");
+            const imprBtn = document.getElementById("consentTabImpressumBtn");
+            const privContent = document.getElementById("consentTabPrivacyContent");
+            const imprContent = document.getElementById("consentTabImpressumContent");
+
+            if (tab === 'privacy') {
+                privBtn.className = "pb-2 px-3 border-b-2 border-indigo-500 text-indigo-400";
+                imprBtn.className = "pb-2 px-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200";
+                privContent.classList.remove("hidden");
+                imprContent.classList.add("hidden");
+            } else {
+                imprBtn.className = "pb-2 px-3 border-b-2 border-indigo-500 text-indigo-400";
+                privBtn.className = "pb-2 px-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200";
+                imprContent.classList.remove("hidden");
+                privContent.classList.add("hidden");
+            }
+        }
+
+        function openConsentTab(tab) {
+            switchConsentTab(tab);
+        }
+
+        // --- CORE APPLICATION LOGIC ---
+        let currentImage = null;
+        let imageFileName = "wallpaper";
+        let targetWidth = 1920;
+        let targetHeight = 1080;
+        let paddingStyle = 'color'; // 'color' | 'blur'
+        let fitMode = 'contain';    // 'contain' | 'cover'
+        let bgColor = '#0f172a';
+        let blurRadius = 30;
+        let dimOpacity = 0.35;
+
+        // Blur source sampling box (normalized ratios 0.0 - 1.0)
+        let blurCrop = { x: 0, y: 0, w: 1, h: 1 };
+        let isSelectingBlurCrop = false;
+        let isDraggingCrop = false;
+        let cropStartPoint = { x: 0, y: 0 };
+        let cropTempRect = null;
+
+        // DOM Elements
+        const fileInput = document.getElementById('fileInput');
+        const dropZone = document.getElementById('dropZone');
+        const customWidth = document.getElementById('customWidth');
+        const customHeight = document.getElementById('customHeight');
+        const bgColorPicker = document.getElementById('bgColorPicker');
+        const blurRange = document.getElementById('blurRange');
+        const dimRange = document.getElementById('dimRange');
+        const blurValLabel = document.getElementById('blurValLabel');
+        const dimValLabel = document.getElementById('dimValLabel');
+        const canvas = document.getElementById('previewCanvas');
+        const ctx = canvas.getContext('2d');
+        const placeholderState = document.getElementById('placeholderState');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const imageMeta = document.getElementById('imageMeta');
+        const cropOverlayBox = document.getElementById('cropOverlayBox');
+        const blurCropActiveNotice = document.getElementById('blurCropActiveNotice');
+        const cropBtnText = document.getElementById('cropBtnText');
+
+        window.onload = function() {
+            checkConsentOnLoad();
+            setupEventListeners();
+            updatePreviewResolutionLabel();
+        };
+
+        function setupEventListeners() {
+            // Drag and drop handlers
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    dropZone.classList.add('border-indigo-500', 'bg-indigo-500/10');
+                });
+            });
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    dropZone.classList.remove('border-indigo-500', 'bg-indigo-500/10');
+                });
+            });
+            dropZone.addEventListener('drop', (e) => {
+                const files = e.dataTransfer.files;
+                if (files && files.length > 0) handleFile(files[0]);
+            });
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files && e.target.files[0]) handleFile(e.target.files[0]);
+            });
+
+            // Dimension input handlers
+            customWidth.addEventListener('input', () => {
+                targetWidth = Math.max(100, Math.min(8192, parseInt(customWidth.value) || 1920));
+                updatePreviewResolutionLabel();
+                renderWallpaper();
+            });
+            customHeight.addEventListener('input', () => {
+                targetHeight = Math.max(100, Math.min(8192, parseInt(customHeight.value) || 1080));
+                updatePreviewResolutionLabel();
+                renderWallpaper();
+            });
+
+            // Style inputs
+            bgColorPicker.addEventListener('input', (e) => {
+                bgColor = e.target.value;
+                renderWallpaper();
+            });
+            blurRange.addEventListener('input', (e) => {
+                blurRadius = parseInt(e.target.value);
+                blurValLabel.textContent = blurRadius + 'px';
+                renderWallpaper();
+            });
+            dimRange.addEventListener('input', (e) => {
+                dimOpacity = parseInt(e.target.value) / 100;
+                dimValLabel.textContent = e.target.value + '%';
+                renderWallpaper();
+            });
+
+            // Canvas Crop Selection Mouse Events
+            canvas.addEventListener('mousedown', handleCanvasMouseDown);
+            window.addEventListener('mousemove', handleCanvasMouseMove);
+            window.addEventListener('mouseup', handleCanvasMouseUp);
+        }
+
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('Пожалуйста, выберите файл изображения (PNG, JPG, WEBP).');
+                return;
+            }
+            imageFileName = file.name.substring(0, file.name.lastIndexOf('.')) || "wallpaper";
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    currentImage = img;
+                    resetBlurCropArea();
+                    imageMeta.textContent = `${img.width} × ${img.height} px`;
+                    imageMeta.classList.remove('hidden');
+                    placeholderState.classList.add('hidden');
+                    canvas.classList.remove('hidden');
+                    downloadBtn.disabled = false;
+                    renderWallpaper();
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function setDeviceType(type) {
+            document.getElementById('tabDesktop').className = type === 'desktop' ? 'px-3 py-1 rounded-md bg-indigo-600 text-white transition shadow' : 'px-3 py-1 rounded-md text-slate-400 hover:text-white transition';
+            document.getElementById('tabMobile').className = type === 'mobile' ? 'px-3 py-1 rounded-md bg-indigo-600 text-white transition shadow' : 'px-3 py-1 rounded-md text-slate-400 hover:text-white transition';
+            
+            document.getElementById('desktopPresets').classList.toggle('hidden', type !== 'desktop');
+            document.getElementById('mobilePresets').classList.toggle('hidden', type !== 'mobile');
+
+            if (type === 'desktop') setResolution(1920, 1080, 'Full HD');
+            else setResolution(1179, 2556, 'iPhone 15 / 16 Pro');
+        }
+
+        function setResolution(w, h, name) {
+            targetWidth = w;
+            targetHeight = h;
+            customWidth.value = w;
+            customHeight.value = h;
+            
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.className = 'preset-btn border-slate-800 bg-slate-950 hover:border-slate-700 p-2.5 rounded-xl border text-left transition flex flex-col';
+            });
+            if (event && event.currentTarget) {
+                event.currentTarget.className = 'preset-btn active border-indigo-500 bg-indigo-500/10 p-2.5 rounded-xl border text-left transition flex flex-col';
+            }
+
+            updatePreviewResolutionLabel();
+            renderWallpaper();
+        }
+
+        function setPaddingStyle(style) {
+            paddingStyle = style;
+            const btnColor = document.getElementById('btnStyleColor');
+            const btnBlur = document.getElementById('btnStyleBlur');
+            const optionsColor = document.getElementById('optionsColor');
+            const optionsBlur = document.getElementById('optionsBlur');
+
+            if (style === 'color') {
+                btnColor.className = "p-3 rounded-xl border border-indigo-500 bg-indigo-500/10 text-indigo-300 text-xs font-medium flex items-center justify-center gap-2 transition";
+                btnBlur.className = "p-3 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 text-xs font-medium flex items-center justify-center gap-2 transition";
+                optionsColor.classList.remove('hidden');
+                optionsBlur.classList.add('hidden');
+                disableBlurCropMode();
+            } else {
+                btnBlur.className = "p-3 rounded-xl border border-indigo-500 bg-indigo-500/10 text-indigo-300 text-xs font-medium flex items-center justify-center gap-2 transition";
+                btnColor.className = "p-3 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 text-xs font-medium flex items-center justify-center gap-2 transition";
+                optionsBlur.classList.remove('hidden');
+                optionsColor.classList.add('hidden');
+            }
+            renderWallpaper();
+        }
+
+        function setQuickColor(hex) {
+            bgColor = hex;
+            bgColorPicker.value = hex;
+            renderWallpaper();
+        }
+
+        function setFitMode(mode) {
+            fitMode = mode;
+            document.getElementById('btnFitContain').className = mode === 'contain' ? 'py-2 px-3 rounded-xl bg-indigo-600 text-white text-xs font-medium transition' : 'py-2 px-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 hover:text-white text-xs font-medium transition';
+            document.getElementById('btnFitCover').className = mode === 'cover' ? 'py-2 px-3 rounded-xl bg-indigo-600 text-white text-xs font-medium transition' : 'py-2 px-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 hover:text-white text-xs font-medium transition';
+            renderWallpaper();
+        }
+
+        function updatePreviewResolutionLabel() {
+            document.getElementById('previewResolutionText').textContent = `${targetWidth} × ${targetHeight} px`;
+        }
+
+        function toggleBlurCropSelection() {
+            if (!currentImage) {
+                alert("Сначала загрузите изображение.");
+                return;
+            }
+            isSelectingBlurCrop = !isSelectingBlurCrop;
+            if (isSelectingBlurCrop) {
+                canvas.classList.remove('cursor-default');
+                canvas.classList.add('cursor-crosshair');
+                blurCropActiveNotice.classList.remove('hidden');
+                cropBtnText.textContent = "Отменить выбор";
+            } else {
+                disableBlurCropMode();
+            }
+        }
+
+        function disableBlurCropMode() {
+            isSelectingBlurCrop = false;
+            canvas.classList.remove('cursor-crosshair');
+            canvas.classList.add('cursor-default');
+            blurCropActiveNotice.classList.add('hidden');
+            cropOverlayBox.classList.add('hidden');
+            cropBtnText.textContent = "Выбрать область";
+        }
+
+        function resetBlurCropArea() {
+            blurCrop = { x: 0, y: 0, w: 1, h: 1 };
+            disableBlurCropMode();
+            renderWallpaper();
+        }
+
+        function handleCanvasMouseDown(e) {
+            if (!isSelectingBlurCrop || !currentImage) return;
+            const rect = canvas.getBoundingClientRect();
+            isDraggingCrop = true;
+            cropStartPoint = {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+            cropOverlayBox.style.left = `${cropStartPoint.x + canvas.offsetLeft}px`;
+            cropOverlayBox.style.top = `${cropStartPoint.y + canvas.offsetTop}px`;
+            cropOverlayBox.style.width = `0px`;
+            cropOverlayBox.style.height = `0px`;
+            cropOverlayBox.classList.remove('hidden');
+        }
+
+        function handleCanvasMouseMove(e) {
+            if (!isDraggingCrop || !isSelectingBlurCrop) return;
+            const rect = canvas.getBoundingClientRect();
+            const currentX = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+            const currentY = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
+
+            const x = Math.min(cropStartPoint.x, currentX);
+            const y = Math.min(cropStartPoint.y, currentY);
+            const w = Math.abs(currentX - cropStartPoint.x);
+            const h = Math.abs(currentY - cropStartPoint.y);
+
+            cropTempRect = { x, y, w, h, canvasW: rect.width, canvasH: rect.height };
+
+            cropOverlayBox.style.left = `${x + canvas.offsetLeft}px`;
+            cropOverlayBox.style.top = `${y + canvas.offsetTop}px`;
+            cropOverlayBox.style.width = `${w}px`;
+            cropOverlayBox.style.height = `${h}px`;
+        }
+
+        function handleCanvasMouseUp() {
+            if (!isDraggingCrop) return;
+            isDraggingCrop = false;
+            if (!cropTempRect || cropTempRect.w < 10 || cropTempRect.h < 10) {
+                cropOverlayBox.classList.add('hidden');
+                return;
+            }
+
+            const normX = cropTempRect.x / cropTempRect.canvasW;
+            const normY = cropTempRect.y / cropTempRect.canvasH;
+            const normW = cropTempRect.w / cropTempRect.canvasW;
+            const normH = cropTempRect.h / cropTempRect.canvasH;
+
+            blurCrop = {
+                x: Math.max(0, Math.min(1, normX)),
+                y: Math.max(0, Math.min(1, normY)),
+                w: Math.max(0.05, Math.min(1, normW)),
+                h: Math.max(0.05, Math.min(1, normH))
+            };
+
+            cropOverlayBox.classList.add('hidden');
+            disableBlurCropMode();
+            renderWallpaper();
+        }
+
+        function renderWallpaper() {
+            if (!currentImage) return;
+
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+
+            // 1. Render Background Layer
+            if (paddingStyle === 'color') {
+                ctx.fillStyle = bgColor;
+                ctx.fillRect(0, 0, targetWidth, targetHeight);
+            } else if (paddingStyle === 'blur') {
+                const srcX = blurCrop.x * currentImage.width;
+                const srcY = blurCrop.y * currentImage.height;
+                const srcW = blurCrop.w * currentImage.width;
+                const srcH = blurCrop.h * currentImage.height;
+
+                const offscreen = document.createElement('canvas');
+                offscreen.width = targetWidth;
+                offscreen.height = targetHeight;
+                const offCtx = offscreen.getContext('2d');
+
+                const bgScale = Math.max(targetWidth / srcW, targetHeight / srcH);
+                const bgW = srcW * bgScale;
+                const bgH = srcH * bgScale;
+                const bgX = (targetWidth - bgW) / 2;
+                const bgY = (targetHeight - bgH) / 2;
+
+                offCtx.filter = `blur(${blurRadius}px)`;
+                offCtx.drawImage(currentImage, srcX, srcY, srcW, srcH, bgX - 20, bgY - 20, bgW + 40, bgH + 40);
+
+                ctx.filter = 'none';
+                ctx.drawImage(offscreen, 0, 0);
+
+                if (dimOpacity > 0) {
+                    ctx.fillStyle = `rgba(0, 0, 0, ${dimOpacity})`;
+                    ctx.fillRect(0, 0, targetWidth, targetHeight);
+                }
+            }
+
+            // 2. Render Main Image Layer
+            ctx.filter = 'none';
+            const imgAspect = currentImage.width / currentImage.height;
+            const targetAspect = targetWidth / targetHeight;
+
+            let drawW, drawH, drawX, drawY;
+
+            if (fitMode === 'contain') {
+                if (imgAspect > targetAspect) {
+                    drawW = targetWidth;
+                    drawH = targetWidth / imgAspect;
+                } else {
+                    drawH = targetHeight;
+                    drawW = targetHeight * imgAspect;
+                }
+            } else {
+                if (imgAspect > targetAspect) {
+                    drawH = targetHeight;
+                    drawW = targetHeight * imgAspect;
+                } else {
+                    drawW = targetWidth;
+                    drawH = targetWidth / imgAspect;
+                }
+            }
+
+            drawX = (targetWidth - drawW) / 2;
+            drawY = (targetHeight - drawH) / 2;
+
+            ctx.drawImage(currentImage, drawX, drawY, drawW, drawH);
+        }
+
+        function downloadWallpaper() {
+            if (!currentImage) return;
+
+            const format = document.getElementById('exportFormat').value;
+            const quality = parseFloat(document.getElementById('exportQuality').value);
+            const ext = format === 'image/png' ? 'png' : 'jpg';
+
+            const dataUrl = canvas.toDataURL(format, quality);
+            const link = document.createElement('a');
+            link.download = `${imageFileName}_${targetWidth}x${targetHeight}.${ext}`;
+            link.href = dataUrl;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function openFooterModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function closeFooterModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
