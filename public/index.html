@@ -910,7 +910,7 @@
       return { drawX, drawY, drawW, drawH };
     }
 
-    function render() {
+ function render(drawOverlay = true) { // Добавили параметр
       if (!currentImage) return;
 
       const canvas = document.getElementById("mainCanvas");
@@ -947,23 +947,25 @@
       const bounds = getImageDisplayBounds();
       ctx.drawImage(currentImage, 0, 0, currentImage.width, currentImage.height, bounds.drawX, bounds.drawY, bounds.drawW, bounds.drawH);
 
-      // Draw interactive crop region box
-      const activeCrop = tempCropRect || cropRect;
-      if (activeCrop) {
-        const selX = bounds.drawX + activeCrop.x * bounds.drawW;
-        const selY = bounds.drawY + activeCrop.y * bounds.drawH;
-        const selW = activeCrop.w * bounds.drawW;
-        const selH = activeCrop.h * bounds.drawH;
+      // Рисуем рамку выделения только если drawOverlay выставлен в true
+      if (drawOverlay) {
+        const activeCrop = tempCropRect || cropRect;
+        if (activeCrop) {
+          const selX = bounds.drawX + activeCrop.x * bounds.drawW;
+          const selY = bounds.drawY + activeCrop.y * bounds.drawH;
+          const selW = activeCrop.w * bounds.drawW;
+          const selH = activeCrop.h * bounds.drawH;
 
-        ctx.save();
-        ctx.strokeStyle = "#00ffcc";
-        ctx.lineWidth = 3;
-        ctx.setLineDash([8, 6]);
-        ctx.strokeRect(selX, selY, selW, selH);
-        
-        ctx.fillStyle = "rgba(0, 255, 204, 0.2)";
-        ctx.fillRect(selX, selY, selW, selH);
-        ctx.restore();
+          ctx.save();
+          ctx.strokeStyle = "#00ffcc";
+          ctx.lineWidth = 3;
+          ctx.setLineDash([8, 6]);
+          ctx.strokeRect(selX, selY, selW, selH);
+          
+          ctx.fillStyle = "rgba(0, 255, 204, 0.2)";
+          ctx.fillRect(selX, selY, selW, selH);
+          ctx.restore();
+        }
       }
     }
 
@@ -1044,12 +1046,18 @@
       });
     }
 
-    function downloadImage() {
+function downloadImage() {
+      // 1. Перерисовываем холст без рамки выделения
+      render(false);
+
       const canvas = document.getElementById("mainCanvas");
       const link = document.createElement("a");
       link.download = "studiowallpaper-export.png";
       link.href = canvas.toDataURL("image/png");
       link.click();
+
+      // 2. Сразу возвращаем рамку обратно на экран для пользователя
+      render(true);
     }
 
     // --- Legal Modal Handlers ---
